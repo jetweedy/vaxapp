@@ -1,0 +1,6 @@
+
+TO DO:
+___ Use DB table to look up notifications to send / manage subscriptions
+___ Use DB table to track various scrapers/systems
+___ Enable email vs text notification (or none, and just custom portal page)
+___ Build web interface to manage this subscription service (Node? PHP?)

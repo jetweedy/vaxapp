@@ -1,0 +1,21 @@
+{
+  "name": "ncr",
+  "version": "1.0.0",
+  "description": "",
+  "main": "AtriumHealth.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "dotenv": "^8.2.0",
+    "got": "^11.8.2",
+    "json2csv": "^5.0.5",
+    "mysql": "^2.18.1",
+    "open": "^8.0.2",
+    "puppeteer": "^5.5.0",
+    "twilio": "^3.57.0"
+  }
+}
