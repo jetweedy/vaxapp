@@ -160,149 +160,151 @@ var cb = function() {
 
 var attempt = async (browser, page) => {
 
-	await page.goto(url);
-	await page.waitForTimeout(2000);
-	console.log("Checking at ", (new Date()) )
-	var x = await page.evaluate(() => {
-		var r = {};
-		r.found = false;
-		r.continue = true;
-		r.urls = [];
-		var h = document.querySelector("#PageContent .cmsPageContent > h3");
-		if (  (!h || h==null) ) { // || h.innerText.trim()!="We’re very sorry, but all vaccine appointments have been scheduled.") {
-			r.found = true;
-			r.continue = false;
-			document.querySelector("#FormField29_497cba67-54b2-428e-979f-e045e5fb82dc").style.display = "block";
-			var iframes = document.querySelectorAll("#FormField29_497cba67-54b2-428e-979f-e045e5fb82dc iframe");
-			for (var i=0;i<iframes.length;i++) {
-				r.urls.push(iframes[i].src);
+	try {
+		await page.goto(url);
+		await page.waitForTimeout(2000);
+		console.log("Checking at ", (new Date()) )
+		var x = await page.evaluate(() => {
+			var r = {};
+			r.found = false;
+			r.continue = true;
+			r.urls = [];
+			var h = document.querySelector("#PageContent .cmsPageContent > h3");
+			if (  (!h || h==null) ) { // || h.innerText.trim()!="We’re very sorry, but all vaccine appointments have been scheduled.") {
+				r.found = true;
+				r.continue = false;
+				document.querySelector("#FormField29_497cba67-54b2-428e-979f-e045e5fb82dc").style.display = "block";
+				var iframes = document.querySelectorAll("#FormField29_497cba67-54b2-428e-979f-e045e5fb82dc iframe");
+				for (var i=0;i<iframes.length;i++) {
+					r.urls.push(iframes[i].src);
+				}
+			} else {
 			}
-		} else {
-		}
-		console.log(r);
-		return r;
-	});
-	if (x.found) {
-		//// Look at which iframes are available
-		console.log("Found results. Digging deeper.");
-		try {
-//			await page.waitForSelector("#FormField29_497cba67-54b2-428e-979f-e045e5fb82dc a");
-//			await page.click("#FormField29_497cba67-54b2-428e-979f-e045e5fb82dc a");
-//			await page.waitForTimeout(2000);
-//			await page.reload();
-//			await page.click(".Accordion .Trigger span");
-//			await page.waitForTimeout(2000);
-			var vaccines = {};
-			var iframeURL = x.urls[0];
-//			console.log(iframeURL);
-			if (!!iframeURL) {
+			console.log(r);
+			return r;
+		});
+		if (x.found) {
+			//// Look at which iframes are available
+			console.log("Found results. Digging deeper.");
+			try {
+	//			await page.waitForSelector("#FormField29_497cba67-54b2-428e-979f-e045e5fb82dc a");
+	//			await page.click("#FormField29_497cba67-54b2-428e-979f-e045e5fb82dc a");
+	//			await page.waitForTimeout(2000);
+	//			await page.reload();
+	//			await page.click(".Accordion .Trigger span");
+	//			await page.waitForTimeout(2000);
+				var vaccines = {};
+				var iframeURL = x.urls[0];
+	//			console.log(iframeURL);
+				if (!!iframeURL) {
+					vaccines["MP"] = {
+						msg:"Moderna and Pfizer Vaccinations Available!"
+						,
+						url:iframeURL
+					};
+				}
+				var iframeURL = x.urls[1];
+	//			console.log(iframeURL);
+				if (!!iframeURL) {
+					vaccines["JJ"] = {
+						msg:"Johnson and Johnson Vaccinations Available!"
+						,
+						url:iframeURL
+					};
+				}
+	//			await page.waitForTimeout(10000);
+
+				//// Get addresses from each iframe page
+				var addresses = [];
+				if (Object.keys(vaccines).length > 0) {
+					for (var i in vaccines) {
+						vaccines[i].addresses = [];
+						try {
+							await page.goto(vaccines[i].url);
+			//				await page.waitForTimeout(1000);
+							await page.waitForTimeout(1000);
+			//				await page.waitForSelector(".scrollTableWrapper .departmentAddress");
+			//				console.log("button available!");
+							var adds = await page.evaluate(() => {
+								var addies = document.querySelectorAll(".scrollTableWrapper .departmentAddress");
+								var r = {};
+								for (var a=0;a<addies.length;a++) {
+									r[addies[a].innerText] = addies[a].innerText;
+								}
+								return r;
+							});
+							for (var a in adds) {
+								vaccines[i].addresses.push(adds[a]);
+							}
+						} catch(er) {
+							console.log("er: ", er);
+						}
+					}
+				}
+
+			/*
+				//// Generate fake address results:
+				var x = {continue:true};
+				var vaccines = {};
 				vaccines["MP"] = {
 					msg:"Moderna and Pfizer Vaccinations Available!"
 					,
-					url:iframeURL
+					addresses:[
+						"2 Holly Crest Ct., Greensboro, NC 27410"
+						,
+						"100 Airport Road, Kinston, NC 28501"				
+					]
 				};
-			}
-			var iframeURL = x.urls[1];
-//			console.log(iframeURL);
-			if (!!iframeURL) {
 				vaccines["JJ"] = {
 					msg:"Johnson and Johnson Vaccinations Available!"
 					,
-					url:iframeURL
+					addresses:[
+						"101 E. Weaver Street, Carrboro, NC 27510"
+						,
+						"100 Airport Road, Kinston, NC 28501"
+					]
 				};
-			}
-//			await page.waitForTimeout(10000);
+			*/
 
-			//// Get addresses from each iframe page
-			var addresses = [];
-			if (Object.keys(vaccines).length > 0) {
-				for (var i in vaccines) {
-					vaccines[i].addresses = [];
-					await page.goto(vaccines[i].url);
-	//				await page.waitForTimeout(1000);
-					try {
-						await page.waitForTimeout(1000);
-		//				await page.waitForSelector(".scrollTableWrapper .departmentAddress");
-		//				console.log("button available!");
-						var adds = await page.evaluate(() => {
-							var addies = document.querySelectorAll(".scrollTableWrapper .departmentAddress");
-							var r = {};
-							for (var a=0;a<addies.length;a++) {
-								r[addies[a].innerText] = addies[a].innerText;
-							}
-							return r;
-						});
-						for (var a in adds) {
-							vaccines[i].addresses.push(adds[a]);
+				//// 
+				//// Prepare array of unique driving stretches
+				var stretches = {};
+				for (var c in clients) {
+					var cloc = clients[c].location;
+					stretches[cloc] = {};
+					for (var v in vaccines) {
+						for (var a in vaccines[v].addresses) {
+							var vloc = vaccines[v].addresses[a];
+							stretches[cloc][vloc] = {
+								origin:cloc, destination:vloc
+							};						
 						}
-					} catch(er) {
-						console.log("er: ", er);
 					}
 				}
-			}
-
-		/*
-			//// Generate fake address results:
-			var x = {continue:true};
-			var vaccines = {};
-			vaccines["MP"] = {
-				msg:"Moderna and Pfizer Vaccinations Available!"
-				,
-				addresses:[
-					"2 Holly Crest Ct., Greensboro, NC 27410"
-					,
-					"100 Airport Road, Kinston, NC 28501"				
-				]
-			};
-			vaccines["JJ"] = {
-				msg:"Johnson and Johnson Vaccinations Available!"
-				,
-				addresses:[
-					"101 E. Weaver Street, Carrboro, NC 27510"
-					,
-					"100 Airport Road, Kinston, NC 28501"
-				]
-			};
-		*/
-
-			//// 
-			//// Prepare array of unique driving stretches
-			var stretches = {};
-			for (var c in clients) {
-				var cloc = clients[c].location;
-				stretches[cloc] = {};
-				for (var v in vaccines) {
-					for (var a in vaccines[v].addresses) {
-						var vloc = vaccines[v].addresses[a];
-						stretches[cloc][vloc] = {
-							origin:cloc, destination:vloc
-						};						
+				var stretchCount = 0;
+				for (var c in stretches) {
+					for (var v in stretches[c]) {
+						stretchCount++;
 					}
 				}
-			}
-			var stretchCount = 0;
-			for (var c in stretches) {
-				for (var v in stretches[c]) {
-					stretchCount++;
+
+				//// Prepare a package to process after all locations are handled
+				var package = { vaccines:vaccines, count:0, distances:{} }
+				package.count = stretchCount;
+				for (var a in stretches) {
+					for (var b in stretches[a]) {
+		//				console.log("packageDistance:", stretches[a][b])
+						packageDistance(stretches[a][b].origin, stretches[a][b].destination, package);
+					}
 				}
+		//		await page.waitForTimeout(1000000);
+		//		browser.close();
+			} catch(e) {
+				console.log("e: ", e);
 			}
 
-			//// Prepare a package to process after all locations are handled
-			var package = { vaccines:vaccines, count:0, distances:{} }
-			package.count = stretchCount;
-			for (var a in stretches) {
-				for (var b in stretches[a]) {
-	//				console.log("packageDistance:", stretches[a][b])
-					packageDistance(stretches[a][b].origin, stretches[a][b].destination, package);
-				}
-			}
-	//		await page.waitForTimeout(1000000);
-	//		browser.close();
-		} catch(e) {
-			console.log("e: ", e);
 		}
-
-	}
+	} catch(err) { console.log("er:", err); }
 
 	//// ----------------------------------------
 
@@ -311,21 +313,22 @@ var attempt = async (browser, page) => {
 
 
 var scrape = async () => {
-// -----------------------------------    
-// Set headless to false when testing:
-// -----------------------------------    
+	// -----------------------------------    
+	// Set headless to false when testing:
+	// -----------------------------------    
 	let browser = await puppeteer.launch({headless: hide_browser, args: ['--no-sandbox', '--disable-setuid-sandbox']});
-// -----------------------------------    
-	let page = await browser.newPage();
-	var x = await attempt(browser, page);
-
+	// -----------------------------------    
+	try {		
+		let page = await browser.newPage();
+		var x = await attempt(browser, page);
+	} catch(er) { 
+		console.log("er", er);
+	}
 	////-----------------------------------------------
 	//// Run nonstop until manually quitting for now
 	////-----------------------------------------------
-	if (true || x.continue) {
-		console.log("Continuing shortly...");
-		setTimeout(scrape, interval);
-	}
+	console.log("Continuing shortly...");
+	setTimeout(scrape, interval);
 	////-----------------------------------------------
 	browser.close();
 	return x;
