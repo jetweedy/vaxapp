@@ -45,6 +45,7 @@ var sendSMS = (phone, message) => {
 
 var sendPackage = (package) => {
 
+	var sentAny = false;
 	for (var c in clients) {
 //		console.log("client:", clients[c]);
 		var msgs = [];
@@ -66,11 +67,14 @@ var sendPackage = (package) => {
 			}
 		}
 		if (msgs.length > 0) {
+			sentAny = true;
 			msgs.unshift(clients[c].name+"!");
 			sendSMS(clients[c].phone, msgs.join(" \n"));
 		}
 	}
-
+	if (!sentAny) {
+		console.log("No alerts found.");
+	}
 
 	/*
 	var message = package.message + " ";
