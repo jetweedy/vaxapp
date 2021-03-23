@@ -27,7 +27,7 @@ var sendSMS = (phone, message) => {
 	console.log(phone);
 	console.log(message);
 	console.log();
-//return;
+	//return;
 
     twilioClient.messages.create({
         body: message,
@@ -64,11 +64,13 @@ var sendPackage = (package) => {
 			}
 			if (adds.length > 0) {
 				msgs.push(package.vaccines[v].msg + " \n" + adds.join(" \n"));
+				msgs.push(package.vaccines[v].url);
 			}
 		}
 		if (msgs.length > 0) {
 			sentAny = true;
 			msgs.unshift(clients[c].name+"!");
+//			msgs.push(url);
 			sendSMS(clients[c].phone, msgs.join(" \n"));
 		}
 	}

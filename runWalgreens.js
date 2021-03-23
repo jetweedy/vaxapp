@@ -159,20 +159,40 @@ var cb = function() {
 
 
 var attempt = async (browser, page) => {
-
+	var x = {};
 	try {
 
 		console.log("Checking Walgreens at ", (new Date()) )
-		var zips = ['27410'];
-		for (var z in zips) {
-			await page.goto(url);
-			await page.waitForTimeout(1000);
-			await page.click("#userOptionButtons a");
+		/*
+		Go through clients and compile unique locations.
+		Then AFTERWARDS, go back through clients and compile messages;
+		*/
+		var locations = [
+			'Goldsboro, NC', 'Cary, NC'
+		]
+		await page.goto(url);
+		await page.click("#userOptionButtons a");
+		for (var l in locations) {
+//			await page.waitForTimeout(1000);
 			await page.waitForSelector("#inputLocation");
+			await page.waitForTimeout(2000);
+			await page.evaluate(function() {
+			    document.querySelector('#inputLocation').value = '';
+			});
 			await page.waitForTimeout(1000);
-			await page.evaluate( () => document.getElementById("inputLocation").value = "");
-			await page.type("#inputLocation", zips[z]);
+//			await page.insert('#inputLocation', locations[l]);
+			await page.type("#inputLocation", locations[l]);
+			await page.waitForTimeout(5000);
 			await page.click("#wag-body-main-container button");
+			var av = await page.evaluate( () => { 
+				var b = document.querySelector(".alert__green p");
+				if (b!=null && b.innerText=="Appointments available!") {
+					return true;
+				} else {
+					return false;
+				}
+			});
+			console.log("Appointments in " + locations[l] + ": ", av);
 		}
 		await page.waitForTimeout(10000);			
 			/*
@@ -243,7 +263,9 @@ var scrape = async () => {
 	// -----------------------------------    
 	// Set headless to false when testing:
 	// -----------------------------------    
-	let browser = await puppeteer.launch({headless: hide_browser, args: ['--no-sandbox', '--disable-setuid-sandbox']});
+	let browser = await puppeteer.launch({headless: hide_browser
+		, args: ['--no-sandbox', '--disable-setuid-sandbox', '--incognito']
+	});
 	// -----------------------------------    
 	try {		
 		let page = await browser.newPage();
