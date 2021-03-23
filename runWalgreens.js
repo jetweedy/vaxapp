@@ -18,7 +18,7 @@ const twilioClient = new twilio(twilio_accountSid, twilio_authToken);
 var requests
 var interval = 1000 * 60 * parseFloat(process.env.INTERVAL_MINUTES);	// 1000ms x 60s x 60m
 var gkey = process.env.GOOGLE_KEY;
-var url = "https://www.unchealthcare.org/coronavirus/vaccines/phase-1b-covid-19-vaccine/";
+var url = "https://www.walgreens.com/findcare/vaccination/covid-19?ban=covid_vaccine_landing_schedule";
 var hide_browser = (typeof process.env.HIDE_BROWSER == "undefined" || process.env.HIDE_BROWSER=="true") ? true : false;
 
 var sendSMS = (phone, message) => {
@@ -161,149 +161,76 @@ var cb = function() {
 var attempt = async (browser, page) => {
 
 	try {
-		await page.goto(url);
-		await page.waitForTimeout(2000);
-		console.log("Checking at ", (new Date()) )
-		var x = await page.evaluate(() => {
-			var r = {};
-			r.found = false;
-			r.continue = true;
-			r.urls = [];
-			var h = document.querySelector("#PageContent .cmsPageContent > h3");
-			if (  (!h || h==null) ) { // || h.innerText.trim()!="We’re very sorry, but all vaccine appointments have been scheduled.") {
-				r.found = true;
-				r.continue = false;
-				document.querySelector("#FormField29_497cba67-54b2-428e-979f-e045e5fb82dc").style.display = "block";
-				var iframes = document.querySelectorAll("#FormField29_497cba67-54b2-428e-979f-e045e5fb82dc iframe");
-				for (var i=0;i<iframes.length;i++) {
-					r.urls.push(iframes[i].src);
-				}
-			} else {
-			}
-			console.log(r);
-			return r;
-		});
-		if (x.found) {
-			//// Look at which iframes are available
-			console.log("Found results. Digging deeper.");
-			try {
-	//			await page.waitForSelector("#FormField29_497cba67-54b2-428e-979f-e045e5fb82dc a");
-	//			await page.click("#FormField29_497cba67-54b2-428e-979f-e045e5fb82dc a");
-	//			await page.waitForTimeout(2000);
-	//			await page.reload();
-	//			await page.click(".Accordion .Trigger span");
-	//			await page.waitForTimeout(2000);
-				var vaccines = {};
-				var iframeURL = x.urls[0];
-	//			console.log(iframeURL);
-				if (!!iframeURL) {
-					vaccines["MP"] = {
-						msg:"Moderna and Pfizer Vaccinations Available!"
-						,
-						url:iframeURL
-					};
-				}
-				var iframeURL = x.urls[1];
-	//			console.log(iframeURL);
-				if (!!iframeURL) {
-					vaccines["JJ"] = {
-						msg:"Johnson and Johnson Vaccinations Available!"
-						,
-						url:iframeURL
-					};
-				}
-	//			await page.waitForTimeout(10000);
 
-				//// Get addresses from each iframe page
-				var addresses = [];
-				if (Object.keys(vaccines).length > 0) {
-					for (var i in vaccines) {
-						vaccines[i].addresses = [];
-						try {
-							await page.goto(vaccines[i].url);
-			//				await page.waitForTimeout(1000);
-							await page.waitForTimeout(1000);
-			//				await page.waitForSelector(".scrollTableWrapper .departmentAddress");
-			//				console.log("button available!");
-							var adds = await page.evaluate(() => {
-								var addies = document.querySelectorAll(".scrollTableWrapper .departmentAddress");
-								var r = {};
-								for (var a=0;a<addies.length;a++) {
-									r[addies[a].innerText] = addies[a].innerText;
-								}
-								return r;
-							});
-							for (var a in adds) {
-								vaccines[i].addresses.push(adds[a]);
-							}
-						} catch(er) {
-							console.log("er: ", er);
-						}
+		console.log("Checking Walgreens at ", (new Date()) )
+		var zips = ['27410'];
+		for (var z in zips) {
+			await page.goto(url);
+			await page.waitForTimeout(1000);
+			await page.click("#userOptionButtons a");
+			await page.waitForSelector("#inputLocation");
+			await page.waitForTimeout(1000);
+			await page.evaluate( () => document.getElementById("inputLocation").value = "");
+			await page.type("#inputLocation", zips[z]);
+			await page.click("#wag-body-main-container button");
+		}
+		await page.waitForTimeout(10000);			
+			/*
+			//// Generate fake address results:
+			var x = {continue:true};
+			var vaccines = {};
+			vaccines["MP"] = {
+				msg:"Moderna and Pfizer Vaccinations Available!"
+				,
+				addresses:[
+					"2 Holly Crest Ct., Greensboro, NC 27410"
+					,
+					"100 Airport Road, Kinston, NC 28501"				
+				]
+			};
+			vaccines["JJ"] = {
+				msg:"Johnson and Johnson Vaccinations Available!"
+				,
+				addresses:[
+					"101 E. Weaver Street, Carrboro, NC 27510"
+					,
+					"100 Airport Road, Kinston, NC 28501"
+				]
+			};
+			*/
+			/*
+			//// 
+			//// Prepare array of unique driving stretches
+			var stretches = {};
+			for (var c in clients) {
+				var cloc = clients[c].location;
+				stretches[cloc] = {};
+				for (var v in vaccines) {
+					for (var a in vaccines[v].addresses) {
+						var vloc = vaccines[v].addresses[a];
+						stretches[cloc][vloc] = {
+							origin:cloc, destination:vloc
+						};						
 					}
 				}
+			}
+			var stretchCount = 0;
+			for (var c in stretches) {
+				for (var v in stretches[c]) {
+					stretchCount++;
+				}
+			}
 
-			/*
-				//// Generate fake address results:
-				var x = {continue:true};
-				var vaccines = {};
-				vaccines["MP"] = {
-					msg:"Moderna and Pfizer Vaccinations Available!"
-					,
-					addresses:[
-						"2 Holly Crest Ct., Greensboro, NC 27410"
-						,
-						"100 Airport Road, Kinston, NC 28501"				
-					]
-				};
-				vaccines["JJ"] = {
-					msg:"Johnson and Johnson Vaccinations Available!"
-					,
-					addresses:[
-						"101 E. Weaver Street, Carrboro, NC 27510"
-						,
-						"100 Airport Road, Kinston, NC 28501"
-					]
-				};
+			//// Prepare a package to process after all locations are handled
+			var package = { vaccines:vaccines, count:0, distances:{} }
+			package.count = stretchCount;
+			for (var a in stretches) {
+				for (var b in stretches[a]) {
+					packageDistance(stretches[a][b].origin, stretches[a][b].destination, package);
+				}
+			}
 			*/
 
-				//// 
-				//// Prepare array of unique driving stretches
-				var stretches = {};
-				for (var c in clients) {
-					var cloc = clients[c].location;
-					stretches[cloc] = {};
-					for (var v in vaccines) {
-						for (var a in vaccines[v].addresses) {
-							var vloc = vaccines[v].addresses[a];
-							stretches[cloc][vloc] = {
-								origin:cloc, destination:vloc
-							};						
-						}
-					}
-				}
-				var stretchCount = 0;
-				for (var c in stretches) {
-					for (var v in stretches[c]) {
-						stretchCount++;
-					}
-				}
-
-				//// Prepare a package to process after all locations are handled
-				var package = { vaccines:vaccines, count:0, distances:{} }
-				package.count = stretchCount;
-				for (var a in stretches) {
-					for (var b in stretches[a]) {
-		//				console.log("packageDistance:", stretches[a][b])
-						packageDistance(stretches[a][b].origin, stretches[a][b].destination, package);
-					}
-				}
-		//		await page.waitForTimeout(1000000);
-		//		browser.close();
-			} catch(e) {
-				console.log("e: ", e);
-			}
-
-		}
 	} catch(err) { console.log("er:", err); }
 
 	//// ----------------------------------------
