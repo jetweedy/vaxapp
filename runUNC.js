@@ -27,7 +27,7 @@ var sendSMS = (phone, message) => {
 	console.log(phone);
 	console.log(message);
 	console.log();
-	//return;
+	return;
 
     twilioClient.messages.create({
         body: message,
