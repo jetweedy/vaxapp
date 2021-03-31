@@ -49,7 +49,9 @@ return;
 
 
 var attempt = async (page, zip) => {
-    await page.goto(url+zip);    
+    var purl = url+zip;
+    console.log(purl);
+    await page.goto(purl);    
     await page.waitForTimeout(1000);    
     var x = await page.evaluate(() => {
         var r = [];
@@ -60,7 +62,9 @@ var attempt = async (page, zip) => {
             var item = {
                 in_stock: (parts[0].substring(0,8)=="in stock")
                 ,
-                location: parts[1].trim().replace("located at", "").replace(/, +/g," ").trim()
+                location: parts[0].replace("out of stock at", "").replace("in stock at", "").trim()
+                         + " - "
+                         + parts[1].trim().replace("located at", "").replace(/, +/g," ").trim()
             }
             if (item.in_stock) {
                 r.push(item);
@@ -84,7 +88,12 @@ var scrape = async (zip) => {
     try {
         let page = await browser.newPage();
         await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4298.0 Safari/537.36');
-        var zips = {"27612":true, "27513":true, "27530":true};
+        var zips = {"27612":true
+                    , "27513":true
+                    , "27530":true
+                    , "27410":true
+                    , "27510":true
+                };
 //        var zips = ["27510","27511","27512","27513","27514","27515","27516","27517","27518","27519"];
         for (var z in zips) {
             console.log("Checking ", z, "...");
